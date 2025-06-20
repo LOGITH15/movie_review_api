@@ -18,8 +18,8 @@ class Review(BaseModel):
 class ReviewOut(Review):
     id: str
 
-@app.post("/reviews/", response_model=ReviewOut)
-async def create_review(review: Review):
+@app.post("/reviews/", response_model=ReviewOut, description="Add a new movie review")
+async def Create_review(review: Review):
     review_dict = review.model_dump()
     result = await collection.insert_one(review_dict)
     if not result.acknowledged:
@@ -27,21 +27,21 @@ async def create_review(review: Review):
     
     review_out = ReviewOut(id=str(result.inserted_id), **review_dict)
     return review_out
-@app.get("/reviews",response_model=list[ReviewOut])
+@app.get("/reviews",response_model=list[ReviewOut], description="See all movie reviews")
 async def get_reviews():
     reviews = []
     async for review in collection.find():
         review_out = ReviewOut(id=str(review["_id"]), **review)
         reviews.append(review_out)
     return reviews
-@app.get("/reviews/{review_id}", response_model=ReviewOut)
+@app.get("/reviews/{review_id}", response_model=ReviewOut, description="Get movie review by it's ID")
 async def get_user_by_id(review_id: str):
     review = await collection.find_one({"_id": ObjectId(review_id)})
     if review is None:
         raise HTTPException(status_code=404, detail="Review not found")
     return ReviewOut(id=str(review["_id"]), **review)
 
-@app.put("/reviews/{review_id}", response_model=ReviewOut)
+@app.put("/reviews/{review_id}", response_model=ReviewOut, description="Update the movie review by ID")
 async def update_review(review_id: str, review: Review):
     result = await collection.update_one({"_id": ObjectId(review_id)}, {"$set": review.model_dump()})
     if result.modified_count == 0:
@@ -52,7 +52,7 @@ async def update_review(review_id: str, review: Review):
         raise HTTPException(status_code=404, detail="Review not found")
 
     return ReviewOut(id=str(updated_review["_id"]), **updated_review)
-@app.delete("/reviews/{review_id}")
+@app.delete("/reviews/{review_id}",description="Delete a movie review by ID")
 async def delete_review(review_id: str):
     result = await collection.delete_one({"_id": ObjectId(review_id)})
     if result.deleted_count == 0:
